@@ -47,7 +47,10 @@ class Player(pygame.sprite.Sprite):
     pygame.draw.line(self.original_image, dir_pointer_color, (16, 16), (30, 16), 3)
     
     self.image = self.original_image
-    self.rect = self.image.get_rect(center=(x, y))
+    self.hitbox = pygame.Rect(0, 0, 24, 24)
+    self.hitbox.center = (x, y)
+    
+    self.rect = self.image.get_rect(center= self.hitbox.center)
     
     #физика
     self.pos = pygame.math.Vector2(x, y)
@@ -78,31 +81,28 @@ class Player(pygame.sprite.Sprite):
     
     #Движение по x
     self.pos.x += move_vec.x * self.speed * dt
-    self.rect.centerx = round(self.pos.x)
-    self.check_collision('x', walls, move_vec.x)
-    
-    #Движение по y
+    self.hitbox.centerx = round(self.pos.x)
+    for wall in walls:
+      if self.hitbox.colliderect(wall.rect):
+        if move_vec.x > 0:
+          self.hitbox.right = wall.rect.left
+        if move_vec.x < 0:
+          self.hitbox.left = wall.rect.right
+        self.pos.x = self.hitbox.centerx
+        
     self.pos.y += move_vec.y * self.speed * dt
-    self.rect.centery = round(self.pos.y)
-    self.check_collision('y', walls, move_vec.y)
+    self.hitbox.centery = round(self.pos.y)
+    for wall in walls:
+      if self.hitbox.colliderect(wall.rect):
+        if move_vec.y > 0:
+          self.hitbox.bottom = wall.rect.top
+        if move_vec.y < 0:
+          self.hitbox.top = wall.rect.bottom
+        self.pos.y = self.hitbox.centery
+        
+
     
-  def check_collision(self, direction, walls, vel_component):
-    hits = pygame.sprite.spritecollide(self, walls, False)
-    if hits:
-      if direction == 'x':
-        if vel_component > 0:
-          self.rect.right = hits[0].rect.left
-        if vel_component < 0:
-          self.rect.left = hits[0].rect.right
-        self.pos.x = self.rect.centerx
-      if direction == 'y':
-        if vel_component > 0:
-          self.rect.bottom = hits[0].rect.top
-        if vel_component < 0:
-          self.rect.top = hits[0].rect.bottom
-        self.pos.y = self.rect.centery
-          
-  
+
   
   def rotate_towards_mouse(self):
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -110,15 +110,11 @@ class Player(pygame.sprite.Sprite):
     self.angle = math.degrees(math.atan2(-rel_y, rel_x))
     
     self.image = pygame.transform.rotate(self.original_image, self.angle)
-    self.rect = self.image.get_rect(center=self.rect.center)
+    self.rect = self.image.get_rect(center=self.hitbox.center)
     
   
   def update(self, dt, walls):
     self.move_and_collide(dt, walls)
-    #move_vec = self.get_input()
-    #self.pos += move_vec * self.speed * dt
-    #self.rect.center = self.pos
-    
     self.rotate_towards_mouse()
     
 
@@ -157,7 +153,8 @@ def main():
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
         running = False
-    player.update(dt, walls_group)
+    if player:
+      player.update(dt, walls_group)
     
     screen.fill(bg_color)
     all_sprites.draw(screen)
