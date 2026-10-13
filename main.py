@@ -302,9 +302,10 @@ class Player(pygame.sprite.Sprite):
 
   def rotate_towards_mouse(self, camera_offset):
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    world_mouse_x = mouse_x - camera_offset.x
-    world_mouse_y = mouse_y - camera_offset.y
-    rel_x, rel_y = world_mouse_x - self.pos.x, world_mouse_y - self.pos.y
+    world_mouse_x = mouse_x + camera_offset.x
+    world_mouse_y = mouse_y + camera_offset.y
+    rel_x = world_mouse_x - self.pos.x
+    rel_y = world_mouse_y - self.pos.y
     self.angle = math.degrees(math.atan2(-rel_y, rel_x))
 
     self.image = pygame.transform.rotate(self.original_image, self.angle)
