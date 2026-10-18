@@ -200,22 +200,36 @@ class Teacher(pygame.sprite.Sprite):
         self.state = "PATROL"
       return
 
-    if not self.patrol_points:
-      return
 
-    target = self.patrol_points[self.current_point_idx]
+    self.check_vision(player, obstacles)
+
+
+    if self.sees_player:
+      self.state = "CHASE"
+      target = player.pos
+      current_speed = self.speed * 1.5
+    else:
+      if self.state == "CHASE":
+        self.state = "PATROL"
+      
+      if not self.patrol_points:
+        return
+      target = self.patrol_points[self.current_point_idx]
+      current_speed = self.speed
+
     move_vec = target - self.pos
 
-    if move_vec.length() < 5:
+
+    if self.state == "PATROL" and move_vec.length() < 5:
       self.current_point_idx = (self.current_point_idx + 1) % len(self.patrol_points)
       target = self.patrol_points[self.current_point_idx]
       move_vec = target - self.pos
 
     if move_vec.length() > 0:
       norm_move = move_vec.normalize()
-      step = norm_move * self.speed * dt
+      step = norm_move * current_speed * dt
 
-      # Движение по X
+
       self.pos.x += step.x
       self.hitbox.centerx = round(self.pos.x)
       for obstacle in walls:
@@ -224,7 +238,7 @@ class Teacher(pygame.sprite.Sprite):
           elif step.x < 0: self.hitbox.left = obstacle.rect.right
           self.pos.x = self.hitbox.centerx
 
-      # Движение по Y
+
       self.pos.y += step.y
       self.hitbox.centery = round(self.pos.y)
       for obstacle in walls:
@@ -233,13 +247,9 @@ class Teacher(pygame.sprite.Sprite):
           elif step.y < 0: self.hitbox.top = obstacle.rect.bottom
           self.pos.y = self.hitbox.centery
 
-
       self.angle = math.degrees(math.atan2(-norm_move.y, norm_move.x))
       self.image = pygame.transform.rotate(self.original_image, self.angle)
       self.rect = self.image.get_rect(center=self.hitbox.center)
-
-
-    self.check_vision(player, obstacles)
 
 class Player(pygame.sprite.Sprite):
   def __init__(self, x, y):
@@ -275,7 +285,7 @@ class Player(pygame.sprite.Sprite):
   def move_and_collide(self, dt, obstacles):
     move_vec = self.get_input()
 
-    # Движение x
+
     self.pos.x += move_vec.x * self.speed * dt
     self.hitbox.centerx = round(self.pos.x)
     for obstacle in obstacles:
@@ -284,7 +294,7 @@ class Player(pygame.sprite.Sprite):
         elif move_vec.x < 0: self.hitbox.left = obstacle.rect.right
         self.pos.x = self.hitbox.centerx
 
-    # Движение Y
+
     self.pos.y += move_vec.y * self.speed * dt
     self.hitbox.centery = round(self.pos.y)
     for obstacle in obstacles:
@@ -378,7 +388,7 @@ def main():
               door.toggle()
           #Подножка учителю
           for teacher in teachers_group:
-            if teacher.state != "STUNNED" and player.hitbox.inflate(40, 40).colliderect(teacher.hitbox):
+            if teacher.state != "STUNNED" and not teacher.sees_player and  player.hitbox.inflate(40, 40).colliderect(teacher.hitbox):
               teacher.stun(5.0)
 
   
