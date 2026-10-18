@@ -17,19 +17,47 @@ DOOR_COLOR = (180, 110, 50)
 STEALTH_ZONE_COLOR = (40, 90, 60, 120)
 CONE_PATROL_COLOR = (255, 255, 100, 60)
 CONE_ALERT_COLOR = (255, 40, 40, 120)
-#W - Стена, P - Игрок, T - Учитель, D - Дверь, S - Стелс-зона (туалет/стол)
-LEVEL_MAP = ["WWWWWWWWWWWWWWWWWWWW",
-             "W........W.........W",
-             "W..S.....D....T....W",
-             "W........W.........W",
-             "WWWW D WWWWWWWW D WW",
-             "W..................W",
-             "W...P..............W",
-             "WWWW D WWWWWWWWWWWWW",
-             "W........W.........W",
-             "W..S.....D.........W",
-             "WWWWWWWWWWWWWWWWWWWW", ]
+#W - Стена, P - Игрок, T - Учитель, D - Дверь, S - Стелс-зона (туалет/стол), L - Лестница
+LEVEL_MAP_1 = [
+    "WWWWWWWWWWWWWWWWWWWW",
+    "W........W.........W",
+    "W..S.....D....T....W",
+    "W........W.........W",
+    "WWWW D WWWWWWWW D WW",
+    "W..................W",
+    "W...P..............W",
+    "WWWW D WWWWWWWWWWWWW",
+    "W........W.........W",
+    "W..S.....D...L.....W",
+    "WWWWWWWWWWWWWWWWWWWW",
+]
 
+LEVEL_MAP_2 = [
+    "WWWWWWWWWWWWWWWWWWWW",
+    "W...L....W.........W", 
+    "W........D.........W",
+    "W........W.........W",
+    "WWWW D WWWWWWWW D WW",
+    "W..................W",
+    "W..................W",
+    "WWWW D WWWWWWWWWWWWW",
+    "W........W...P.....W",
+    "W........D...L.....W", 
+    "WWWWWWWWWWWWWWWWWWWW",
+]
+LEVEL_MAPS = [LEVEL_MAP_1, LEVEL_MAP_2]
+current_floor = 0
+
+class Stairs(pygame.sprite.Sprite):
+  def __init__(self, x, y):
+    super().__init__()
+    self.image = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+    self.image.fill((200, 150, 50, 180))
+    pygame.draw.rect(self.image, (255, 200, 100), (0, 0, TILE_SIZE, TILE_SIZE), 2)
+
+    for i in range(4):
+      pygame.draw.line(self.image, (100, 70, 20), (10, 12 * i + 10), (TILE_SIZE - 10, 12 * i + 10), 2)
+    self.rect = self.image.get_rect(topleft=(x, y))
 
 class Camera():
   def __init__(self, width, height):
@@ -279,14 +307,16 @@ class Player(pygame.sprite.Sprite):
 
     if move_vec.length_squared() > 0:
       move_vec = move_vec.normalize()
-
-    return move_vec
+    current_speed = self.speed
+    if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+      current_speed *= 0.4
+    return move_vec, current_speed
 
   def move_and_collide(self, dt, obstacles):
-    move_vec = self.get_input()
+    move_vec, current_speed = self.get_input()
 
 
-    self.pos.x += move_vec.x * self.speed * dt
+    self.pos.x += move_vec.x * current_speed * dt
     self.hitbox.centerx = round(self.pos.x)
     for obstacle in obstacles:
       if self.hitbox.colliderect(obstacle.rect):
@@ -295,7 +325,7 @@ class Player(pygame.sprite.Sprite):
         self.pos.x = self.hitbox.centerx
 
 
-    self.pos.y += move_vec.y * self.speed * dt
+    self.pos.y += move_vec.y * current_speed * dt
     self.hitbox.centery = round(self.pos.y)
     for obstacle in obstacles:
       if self.hitbox.colliderect(obstacle.rect):
@@ -327,21 +357,18 @@ class Player(pygame.sprite.Sprite):
     self.rotate_towards_mouse(camera_offset)
 
 
-
-def main():
-  screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-  pygame.display.set_caption("School Escape: Пьяный переполох")
-  clock = pygame.time.Clock()
-
+def load_floor(floor_idx):
   walls_group = pygame.sprite.Group()
   doors_group = pygame.sprite.Group()
   stealth_group = pygame.sprite.Group()
   teachers_group = pygame.sprite.Group()
+  stairs_group = pygame.sprite.Group()
   all_sprites = pygame.sprite.Group()
 
   player = None
+  current_map = LEVEL_MAPS[floor_idx]
 
-  for row_idx, row in enumerate(LEVEL_MAP):
+  for row_idx, row in enumerate(current_map):
     for col_idx, char in enumerate(row):
       x = col_idx * TILE_SIZE
       y = row_idx * TILE_SIZE
@@ -357,10 +384,13 @@ def main():
         zone = StealthZone(x, y)
         stealth_group.add(zone)
         all_sprites.add(zone)
+      elif char == 'L':
+        stairs = Stairs(x, y)
+        stairs_group.add(stairs)
+        all_sprites.add(stairs)
       elif char == 'P':
         player = Player(x + TILE_SIZE // 2, y + TILE_SIZE // 2)
       elif char == 'T':
-        #Учитель патрулирует
         patrol_points = [pygame.math.Vector2(x + 32, y + 32), pygame.math.Vector2(x + 96, y + 280)]
         teacher = Teacher(x + 32, y + 32, patrol_points)
         teachers_group.add(teacher)
@@ -368,6 +398,19 @@ def main():
 
   if player:
     all_sprites.add(player)
+
+  return walls_group, doors_group, stealth_group, teachers_group, stairs_group, all_sprites, player
+
+
+
+def main():
+  screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+  pygame.display.set_caption("School Escape: Пьяный переполох")
+  clock = pygame.time.Clock()
+
+  current_floor = 0
+  # Загружаем первый этаж через нашу новую функцию
+  walls_group, doors_group, stealth_group, teachers_group, stairs_group, all_sprites, player = load_floor(current_floor)
 
   font = pygame.font.SysFont("Arial", 20, bold=True)
   camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -382,28 +425,41 @@ def main():
 
       if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_e:
-          #Открытие/закрытие
+          # Открытие/закрытие дверей
           for door in doors_group:
             if player.hitbox.inflate(30, 30).colliderect(door.rect):
               door.toggle()
-          #Подножка учителю
+              
+          # Подножка учителю
           for teacher in teachers_group:
-            if teacher.state != "STUNNED" and not teacher.sees_player and  player.hitbox.inflate(40, 40).colliderect(teacher.hitbox):
+            if teacher.state != "STUNNED" and not teacher.sees_player and player.hitbox.inflate(40, 40).colliderect(teacher.hitbox):
               teacher.stun(5.0)
 
-  
+          # Использование лестницы (подъем / смена этажа)
+          for stairs in stairs_group:
+            if player.hitbox.inflate(30, 30).colliderect(stairs.rect):
+              current_floor = (current_floor + 1) % len(LEVEL_MAPS)
+              
+              # Анимация затемнения (эффект перехода)
+              fade_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+              fade_surface.fill((0, 0, 0))
+              for alpha in range(0, 255, 35):
+                fade_surface.set_alpha(alpha)
+                screen.blit(fade_surface, (0, 0))
+                pygame.display.flip()
+                pygame.time.delay(10)
+              
+              # Загружаем новый этаж
+              walls_group, doors_group, stealth_group, teachers_group, stairs_group, all_sprites, player = load_floor(current_floor)
+              break
+
     active_obstacles = list(walls_group) + [d for d in doors_group if not d.is_open]
     if player:
       camera.update(player)
       player.update(dt, active_obstacles, stealth_group, camera.offset)
     teachers_group.update(dt, active_obstacles, active_obstacles, player)
-    
 
-    
     screen.fill(BG_COLOR)
-    
-
-    
 
     for sprite in walls_group:
         screen.blit(sprite.image, sprite.rect.topleft - camera.offset)
@@ -411,23 +467,21 @@ def main():
         screen.blit(sprite.image, sprite.rect.topleft - camera.offset)
     for sprite in stealth_group:
         screen.blit(sprite.image, sprite.rect.topleft - camera.offset)
-        
+    for sprite in stairs_group:
+        screen.blit(sprite.image, sprite.rect.topleft - camera.offset)
 
     for teacher in teachers_group:
         teacher.draw_vision_cone(screen, camera.offset)
-        
 
     for teacher in teachers_group:
         screen.blit(teacher.image, teacher.rect.topleft - camera.offset)
     if player:
         screen.blit(player.image, player.rect.topleft - camera.offset)
 
-
-    
     if player.is_hidden:
       status_txt = font.render("СТАТУС: СПРЯТАЛСЯ В ТЕНЬ / КАБИНКУ", True, (0, 255, 150))
     else:
-      status_txt = font.render("СТАТУС: НА ВИДУ", True, (255, 200, 0))
+      status_txt = font.render(f"СТАТУС: НА ВИДУ | ЭТАЖ: {current_floor + 1}", True, (255, 200, 0))
     screen.blit(status_txt, (20, 20))
 
     pygame.display.flip()
