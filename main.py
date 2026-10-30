@@ -20,7 +20,7 @@ CONE_PATROL_COLOR = (255, 255, 100, 60)
 CONE_ALERT_COLOR = (255, 40, 40, 120)
 # W - Стена, P - Игрок, T - Учитель, D - Дверь, S - Стелс-зона (туалет/стол), L - Лестница
 LEVEL_MAP_1 = [
-    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW....WWWWWWWWWWWWW",
     "W.................................W...........W",
     "W.................................D...........W",
     "W...P.............................D...........W",
@@ -81,9 +81,10 @@ class Wall(pygame.sprite.Sprite):
 
 
 class Door(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, side = 'right'):
         super().__init__()
         self.is_open = False
+        self.side = side
         self.image = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
         self.rect = self.image.get_rect(topleft=(x, y))
         self.update_appearance()
@@ -91,11 +92,13 @@ class Door(pygame.sprite.Sprite):
     def update_appearance(self):
         self.image.fill((0, 0, 0, 0))
         if self.is_open:
-            pygame.draw.rect(self.image, (100, 70, 40, 120), (8, 16, 48, 12), border_radius=3)
+            offset_x = 12 if self.side == 'right' else 44
+            pygame.draw.rect(self.image, (100, 70, 40, 120), (offset_x, 0, 8, TILE_SIZE), border_radius=2)
         else:
-            pygame.draw.rect(self.image, DOOR_COLOR, (8, 20, 48, 24), border_radius=4)
-            pygame.draw.rect(self.image, (100, 50, 20), (8, 20, 48, 24), 2, border_radius=4)
-            pygame.draw.circle(self.image, (220, 180, 100), (42, 32), 3)
+            pygame.draw.rect(self.image, DOOR_COLOR, (22, 0, 20, TILE_SIZE), border_radius=3)
+            pygame.draw.rect(self.image, (100, 50, 20), (22, 0, 20, TILE_SIZE), 2, border_radius=3)
+            handle_x = 26 if self.side == 'left' else 38
+            pygame.draw.circle(self.image, (220, 180, 100), (TILE_SIZE // 2, handle_x), 4)
 
     def toggle(self):
         self.is_open = not self.is_open
