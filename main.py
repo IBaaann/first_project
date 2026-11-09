@@ -24,7 +24,7 @@ LEVEL_MAP_1 = [
     "W.................................W...........W",
     "W.................................D...........W",
     "W...P.............................D...........W",
-    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW...........W",
+    "WWWWWWWDWWWWWWDWWWWWDWWWDWWWWWWWDWW...........W",
     "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW...........W",
     "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW...........D",
     "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW...........D",
@@ -92,7 +92,7 @@ class Door(pygame.sprite.Sprite):
     def update_appearance(self):
         self.image.fill((0, 0, 0, 0))
         if self.is_open:
-            offset_x = 12 if self.side == 'right' else 44
+            offset_x = 28 if self.side == 'right' else 44
             pygame.draw.rect(self.image, (100, 70, 40, 120), (offset_x, 0, 8, TILE_SIZE), border_radius=2)
         else:
             pygame.draw.rect(self.image, DOOR_COLOR, (22, 0, 20, TILE_SIZE), border_radius=3)
@@ -419,7 +419,6 @@ def main():
     clock = pygame.time.Clock()
 
     current_floor = 0
-    # Загружаем первый этаж через нашу новую функцию
     walls_group, doors_group, stealth_group, teachers_group, stairs_group, all_sprites, player = load_floor(
         current_floor)
 
@@ -453,7 +452,7 @@ def main():
                         if player.hitbox.inflate(30, 30).colliderect(stairs.rect):
                             current_floor = (current_floor + 1) % len(LEVEL_MAPS)
 
-                            # Анимация затемнения (эффект перехода)
+                            # Анимация затемнения
                             fade_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
                             fade_surface.fill((0, 0, 0))
                             for alpha in range(0, 255, 35):
@@ -462,7 +461,7 @@ def main():
                                 pygame.display.flip()
                                 pygame.time.delay(10)
 
-                            # Загружаем новый этаж
+                            # Новый этаж
                             walls_group, doors_group, stealth_group, teachers_group, stairs_group, all_sprites, player = load_floor(
                                 current_floor)
                             break
