@@ -20,7 +20,7 @@ CONE_PATROL_COLOR = (255, 255, 100, 60)
 CONE_ALERT_COLOR = (255, 40, 40, 120)
 # W - Стена, P - Игрок, T - Учитель, D - Дверь, S - Стелс-зона (туалет/стол), L - Лестница
 LEVEL_MAP_1 = [
-    "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW....WWWWWWWWWWWWW",
+    "W...WWWWWWWWWWWWW....WWWWWWWWWW....WWWWWWWWWWWWW",
     "W.................................W...........W",
     "W.................................D...........W",
     "W...P.............................D...........W",
