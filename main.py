@@ -45,6 +45,38 @@ def angle_diff(a, b):
 def ipts(points):
     return [(int(round(x)), int(round(y))) for x, y in points]
 
+def tile_of(v):
+    return int(v // TILE)
+
+
+def wrap_text(font, text, max_w):
+    lines = []
+    for para in text.split("\n"):
+        cur = ""
+        for word in para.split(" "):
+            t = (cur + " " + word) if cur else word
+            if cur and font.size(t)[0] > max_w:
+                lines.append(cur)
+                cur = word
+            else:
+                cur = t
+        lines.append(cur)
+    return lines
+
+
+def blit_text(surf, font, text, color, pos, anchor="topleft", shadow=(0, 0, 0), alpha=255):
+    img = font.render(text, True, color)
+    rect = img.get_rect(**{anchor: pos})
+    if shadow is not None:
+        sh = font.render(text, True, shadow)
+        if alpha < 255:
+            sh.set_alpha(alpha)
+        surf.blit(sh, (rect.x + 2, rect.y + 2))
+    if alpha < 255:
+        img.set_alpha(alpha)
+    surf.blit(img, rect)
+    return rect
+
 class Game:
     def __init__(self):
         pygame.init()
